@@ -3,7 +3,7 @@ const Joi = require('joi')
 
 const addTransaction = {
   method: 'POST',
-  path: '/transaction',
+  path: '/transactions',
   config: {
     description: 'Apply credit or debit transaction',
     notes: 'This endpoint receibed a transaction to be applied to the user account',
@@ -21,4 +21,51 @@ const addTransaction = {
   }
 }
 
-module.exports = [addTransaction]
+const getTransaction = {
+  method: 'Get',
+  path: '/transactions/{id}',
+  config: {
+    description: 'Get transaction by id',
+    notes: 'Returns the transaction object',
+    tags: ['api'],
+    validate: {
+      params: {
+        id: Joi.number().required()
+      }
+    }
+  },
+
+  handler: async (request, h) => {
+    return AccountService.getTransaction(request.params.id)
+  }
+}
+
+const getTransactions = {
+  method: 'Get',
+  path: '/transactions',
+  config: {
+    description: 'Get all transactions',
+    notes: 'Returns list of transactions',
+    tags: ['api']
+  },
+
+  handler: async (request, h) => {
+    return AccountService.getTransactions()
+  }
+}
+
+const getBalance = {
+  method: 'Get',
+  path: '/transactions/balance',
+  config: {
+    description: 'Get Account Total',
+    notes: 'Returns the current bank account amount',
+    tags: ['api']
+  },
+
+  handler: async (request, h) => {
+    return AccountService.getBalance()
+  }
+}
+
+module.exports = [addTransaction, getTransaction, getBalance, getTransactions]

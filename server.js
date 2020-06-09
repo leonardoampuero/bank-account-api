@@ -9,7 +9,7 @@ const init = async () => {
   // Create a server with a host and port
   const server = await Hapi.server({
     host: 'localhost',
-    port: 3000,
+    port: 4000,
     routes: {
       validate: {
         failAction: (request, h, err) => {
