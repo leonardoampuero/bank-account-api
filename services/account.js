@@ -1,24 +1,13 @@
 const { ACCOUNT_TYPES } = require('../constants/accountConstatns')
 const storage = require('./storage')
 const Boom = require('boom')
-const moment = require('moment')
-
-// It has no sense with Nodejs that is single threading. Anyway I have just added this flag to make sure the operation is locked.
-let lockedStorage = false
+const { Semaphore } = require('async-mutex')
+const semaphore = new Semaphore(1)
 
 class Account {
-  async isLocked () {
-    let now = moment()
-    if (lockedStorage) {
-      while (lockedStorage) {
-        if (moment().diff(now, 'seconds') > 3) {
-          throw Boom.gatewayTimeout('Timeout')
-        }
-      }
-    }
-  }
 
   async addTransaction (type, amount) {
+    const [value, release] = await semaphore.acquire()
     try {
       if (type === ACCOUNT_TYPES.DEBIT) {
         if ((storage.getTotalAmount() - amount) < 0) {
@@ -26,8 +15,6 @@ class Account {
         }
       }
 
-      await this.isLocked()
-      lockedStorage = true
       let trx = storage.addTransaction(type, amount)
       storage.setTotalAmount(type, amount)
 
@@ -35,13 +22,15 @@ class Account {
     } catch (e) {
       throw e
     } finally {
-      lockedStorage = false
+      release()
     }
   }
 
   async getTransaction (id) {
     try {
-      await this.isLocked()
+      if (semaphore.isLocked()) {
+        throw Boom.locked('Account locked')
+      }
 
       let trx = storage.getTransaction(id)
       if (!trx) {
@@ -54,9 +43,11 @@ class Account {
     }
   }
 
-  async getTransactions (id) {
+  async getTransactions () {
     try {
-      await this.isLocked()
+      if (semaphore.isLocked()) {
+        throw Boom.locked('Account locked')
+      }
 
       let trxs = storage.getTransactionsHistory()
       return trxs
@@ -67,13 +58,8 @@ class Account {
 
   async getBalance () {
     try {
-      let now = moment()
-      if (lockedStorage) {
-        while (lockedStorage) {
-          if (moment().diff(now, 'seconds') > 3) {
-            throw Boom.gatewayTimeout('Timeout')
-          }
-        }
+      if (semaphore.isLocked()) {
+        throw Boom.locked('Account locked')
       }
 
       let trx = storage.getTotalAmount()
