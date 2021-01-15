@@ -22,8 +22,7 @@
     "boom": "7.2.0",
     "request-promise": "4.2.2",
     "request": "2.88.0",
-    "moment": "2.26.0",
-    "async-mutex": "0.2.3"
+    "moment": "2.26.0"
   },
   "devDependencies": {
     "nodemon": "1.17.5",

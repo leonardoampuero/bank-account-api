@@ -1,72 +1,50 @@
 const { ACCOUNT_TYPES } = require('../constants/accountConstatns')
-const storage = require('./storage')
+const Storage = require('./storage')
 const Boom = require('boom')
-const { Semaphore } = require('async-mutex')
-const semaphore = new Semaphore(1)
+const moment = require('moment')
 
 class Account {
+  createTrx (type, amount) {
+    return {
+      type,
+      amount,
+      timestamp: moment()
+    }
+  }
+  async processDebitTransaction (account, amount, type) {
+    if ((account.total - amount) < 0) {
+      throw Boom.badRequest('There is no enough money in your account')
+    }
+    account.total = account.total - amount
 
-  async addTransaction (type, amount) {
-    const [value, release] = await semaphore.acquire()
-    try {
-      if (type === ACCOUNT_TYPES.DEBIT) {
-        if ((storage.getTotalAmount() - amount) < 0) {
-          throw Boom.badRequest('There is no money to apply the debit operation')
-        }
-      }
+    return Storage.findAndUpdate(account, this.createTrx(type, amount))
+  }
 
-      let trx = storage.addTransaction(type, amount)
-      storage.setTotalAmount(type, amount)
+  async processCreditTransaction (account, amount, type) {
+    account.total = account.total + amount
 
-      return trx
-    } catch (e) {
-      throw e
-    } finally {
-      release()
+    return Storage.findAndUpdate(account, this.createTrx(type, amount))
+  }
+  async addTransaction (payload, accountNumber) {
+    const {type, amount} = payload
+
+    let account = await Storage.findByAccountNumber(accountNumber)
+
+    if (type === ACCOUNT_TYPES.DEBIT) {
+      return this.processDebitTransaction(account, amount, type)
+    } else {
+      return this.processCreditTransaction(account, amount, type)
     }
   }
 
-  async getTransaction (id) {
-    try {
-      if (semaphore.isLocked()) {
-        throw Boom.locked('Account locked')
-      }
-
-      let trx = storage.getTransaction(id)
-      if (!trx) {
-        Boom.notFound()
-      } else {
-        return trx
-      }
-    } catch (e) {
-      throw e
-    }
+  async getTransactions (params) {
+    const { account } = params
+    return Storage.getTransactions(account)
   }
 
-  async getTransactions () {
-    try {
-      if (semaphore.isLocked()) {
-        throw Boom.locked('Account locked')
-      }
-
-      let trxs = storage.getTransactionsHistory()
-      return trxs
-    } catch (e) {
-      throw e
-    }
-  }
-
-  async getBalance () {
-    try {
-      if (semaphore.isLocked()) {
-        throw Boom.locked('Account locked')
-      }
-
-      let trx = storage.getTotalAmount()
-      return trx
-    } catch (e) {
-      throw e
-    }
+  async getBalance (params) {
+    const { account } = params
+    return Storage.getBalance(account)
   }
 }
 

@@ -22,6 +22,15 @@ const init = async () => {
   // Add the route
   await server.route(Routes)
 
+  /*
+  await server.ext('onRequest', async (req, h) => {
+    if (req.headers['api-key'] && req.headers['api-key'] === '123') {
+      return h.continue
+    } else {
+      throw Boom.badRequest('Invalid Token')
+    }
+  })
+  */
   const swaggerOptions = {
     info: {
       title: 'Bank Account API Documentation',
@@ -37,6 +46,12 @@ const init = async () => {
       options: {
         methods: ['POST, GET, OPTIONS, DELETE'],
         headers: ['Accept', 'Content-Type', 'Authorization']
+        // origin: ['*'], // an array of origins or 'ignore'
+        // headers: ['Authorization'], // an array of strings - 'Access-Control-Allow-Headers' 
+        // exposedHeaders: ['Accept'], // an array of exposed headers - 'Access-Control-Expose-Headers',
+        // additionalExposedHeaders: ['Accept'], // an array of additional exposed headers
+        // maxAge: 60,
+        // credentials: true // boolean - 'Access-Control-Allow-Credentials'
       }
     },
     {

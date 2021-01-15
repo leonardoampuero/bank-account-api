@@ -3,69 +3,63 @@ const Joi = require('joi')
 
 const addTransaction = {
   method: 'POST',
-  path: '/transactions',
+  path: '/{account}',
   config: {
     description: 'Apply credit or debit transaction',
-    notes: 'This endpoint receibed a transaction to be applied to the user account',
+    notes: 'This endpoint receive a transaction to be applied to the user account',
     tags: ['api'],
     validate: {
       payload: {
         type: Joi.string().valid([ 'credit', 'debit' ]).required(),
         amount: Joi.number().positive().required()
-      }
-    }
-  },
-
-  handler: async (request, h) => {
-    return AccountService.addTransaction(request.payload.type, request.payload.amount)
-  }
-}
-
-const getTransaction = {
-  method: 'Get',
-  path: '/transactions/{id}',
-  config: {
-    description: 'Get transaction by id',
-    notes: 'Returns the transaction object',
-    tags: ['api'],
-    validate: {
+      },
       params: {
-        id: Joi.number().required()
+        account: Joi.number().required()
       }
     }
   },
 
   handler: async (request, h) => {
-    return AccountService.getTransaction(request.params.id)
+    return AccountService.addTransaction(request.payload, request.params.account)
   }
 }
 
 const getTransactions = {
   method: 'Get',
-  path: '/transactions',
+  path: '/{account}/transactions',
   config: {
     description: 'Get all transactions',
     notes: 'Returns list of transactions',
-    tags: ['api']
+    tags: ['api'],
+    validate: {
+      params: {
+        account: Joi.number().required()
+      }
+    }
   },
 
   handler: async (request, h) => {
-    return AccountService.getTransactions()
+    return AccountService.getTransactions(request.params)
   }
 }
 
 const getBalance = {
   method: 'Get',
-  path: '/transactions/balance',
+  path: '/{account}/balance',
   config: {
     description: 'Get Account Total',
     notes: 'Returns the current bank account amount',
-    tags: ['api']
+    tags: ['api'],
+    validate: {
+      params: {
+        account: Joi.number().required()
+      }
+    }
   },
 
   handler: async (request, h) => {
-    return AccountService.getBalance()
+    return AccountService.getBalance(request.params)
   }
 }
 
-module.exports = [addTransaction, getTransaction, getBalance, getTransactions]
+module.exports = [addTransaction, getBalance, getTransactions]

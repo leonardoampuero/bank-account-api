@@ -1,50 +1,47 @@
-const { ACCOUNT_TYPES } = require('../constants/accountConstatns')
-const moment = require('moment')
+const Boom = require('boom')
 
+var ACCOUNT = {
+  accountNumber: 123,
+  total: 1000,
+  updatingCounter: 1, // to avoid race condition
+  transactions: []
+}
 class AccountStorage {
-  constructor (amount, transactions) {
-    this.totalAmount = amount
-    this.transactions = transactions
-    this.id = 0
-  }
 
-  addTransaction (type, amount) {
-    let trx = {
-      id: ++this.id,
-      type,
-      amount,
-      timestamp: moment()
+  async findByAccountNumber (accountNumber) {
+    if (accountNumber === 123) {
+      return ACCOUNT
+    } else {
+      Boom.badRequest('Account not found')
     }
-
-    this.transactions.push(trx)
-    return trx
   }
 
-  getTransactionsHistory () {
-    return this.transactions
-  }
+  async findAndUpdate (updatedAccount, trx) {
+    let account =  await this.findByAccountNumber(updatedAccount.accountNumber)
 
-  getTransaction (id) {
-    for (let i = 0; i < this.transactions.length; i++) {
-      if (this.transactions[i].id === Number(id)) {
-        return this.transactions[i]
-      }
+    // update database
+    if (account.updatingCounter === updatedAccount.updatingCounter) {
+
+      ACCOUNT.total = updatedAccount.total
+      ACCOUNT.updatingCounter++
+      ACCOUNT.transactions.push(trx)
+
+      return ACCOUNT
+    } else {
+      // The account was modified by another service
+      throw new Error('Transaction cannot be processed at this time, please retry')
     }
-
-    return null
   }
 
-  getTotalAmount () {
-    return this.totalAmount
+  async getTransactions (accountNumber) {
+    let account =  await this.findByAccountNumber(accountNumber)
+    return account.transactions
   }
 
-  setTotalAmount (type, amount) {
-    if (type === ACCOUNT_TYPES.DEBIT) {
-      this.totalAmount = this.totalAmount - amount
-    }
-
-    this.totalAmount = this.totalAmount + amount
+  async getBalance (accountNumber) {
+    let account =  await this.findByAccountNumber(accountNumber)
+    return account.total
   }
 }
 
-module.exports = new AccountStorage(0, [])
+module.exports = new AccountStorage()

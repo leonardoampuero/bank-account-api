@@ -15,3 +15,13 @@ Debit and credit operations Api
 ## Api Documentation
 
 https://localhost:4000/documentation
+
+## Post credit debit
+{acount} = 123
+
+http://localhost:4000/{account}
+
+{
+  "type": "credit",
+  "amount": 200
+}
